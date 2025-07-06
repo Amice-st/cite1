@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Text RPG</title>
+    <style>
+        body { font-family: sans-serif; background: #000; color: #0f0; }
+        #log { white-space: pre-line; }
+    </style>
+</head>
+<body>
+    <h1>Text RPG</h1>
+    <div id="log"></div>
+    <form id="input-form">
+        &gt; <input id="command" autocomplete="off" />
+    </form>
+    <script>
+        const log = document.getElementById('log');
+        const commandInput = document.getElementById('command');
+        const form = document.getElementById('input-form');
+
+        const states = {
+            start: {
+                text: "You wake in a dim room. There's a door north.",
+                options: {
+                    "go north": "hall"
+                }
+            },
+            hall: {
+                text: "You enter a hall. A locked door leads east. You see a key on a table.",
+                options: {
+                    "take key": { next: "hall", inventory: "key", text: "You take the key." },
+                    "go east": "locked",
+                    "go south": "start"
+                }
+            },
+            locked: {
+                text: "The door is locked.",
+                options: {
+                    "use key": { next: "outside", requires: "key", text: "You unlock the door and step outside." },
+                    "go west": "hall"
+                }
+            },
+            outside: {
+                text: "You are free. The End.",
+                options: {}
+            }
+        };
+
+        let state = "start";
+        const inventory = new Set();
+        function showState() {
+            append(states[state].text);
+        }
+        function append(text) {
+            log.textContent += text + "\n";
+            log.scrollTop = log.scrollHeight;
+        }
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const cmd = commandInput.value.trim().toLowerCase();
+            commandInput.value = '';
+            append('> ' + cmd);
+            handleCommand(cmd);
+        });
+        function handleCommand(cmd) {
+            const options = states[state].options || {};
+            const target = options[cmd];
+            if (!target) {
+                append("I don't understand.");
+                return;
+            }
+            if (typeof target === 'string') {
+                state = target;
+                showState();
+            } else {
+                if (target.requires && !inventory.has(target.requires)) {
+                    append("You can't do that.");
+                    return;
+                }
+                if (target.inventory) {
+                    inventory.add(target.inventory);
+                }
+                if (target.text) append(target.text);
+                if (target.next) {
+                    state = target.next;
+                    if (states[state]) showState();
+                }
+            }
+        }
+        showState();
+    </script>
+</body>
+</html>
